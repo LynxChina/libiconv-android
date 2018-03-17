@@ -1,0 +1,64 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion build_version.compile_sdk
+    buildToolsVersion build_version.build_tools
+
+    defaultConfig {
+        minSdkVersion build_version.min_sdk
+        targetSdkVersion build_version.target_sdk
+        versionCode build_version.app_version_code
+        versionName build_version.app_version_name
+        project.archivesBaseName = "${project.name}"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11 -frtti -fexceptions -O2"
+                arguments "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_CPP_FEATURES=rtti exceptions",
+                        "-DANDROID_NATIVE_API_LEVEL=19",
+                        "-DANDROID_PLATFORM=android-19",
+                        "-DANDROID_STL=gnustl_shared",
+                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DCMAKE_BUILD_TYPE=Release"
+                abiFilters 'armeabi-v7a'
+            }
+        }
+
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+    }
+
+    sourceSets {
+        main {
+            jni.srcDirs = ['src/main/jniLibs']
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "./CMakeLists.txt"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    dependencies {
+        compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+        compileOnly deps.support.multi_dex
+    }
+}
+
+task makeSO(type: Copy) {
+    from('build/intermediates/bundles/release/jni/')
+    into('so/')
+    include 'armeabi-*/libiconv.so'
+}
+
+makeSO.dependsOn(build)
